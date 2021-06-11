@@ -21,16 +21,16 @@ from io import open, BytesIO
 try:
     from boto import connect_s3
     s3_avail = True
-except ImportError:  #pragma: no cover
+except ImportError:  # pragma: no cover
     s3_avail = False
 
 
-#=================================================================
+# =================================================================
 def is_http(filename):
     return filename.startswith(('http://', 'https://'))
 
 
-#=================================================================
+# =================================================================
 def to_file_url(filename):
     """ Convert a filename to a file:// url
     """
@@ -39,14 +39,14 @@ def to_file_url(filename):
     return url
 
 
-#=================================================================
+# =================================================================
 def load_yaml_config(config_file):
     import yaml
     config = None
     configdata = None
     try:
         configdata = BlockLoader().load(config_file)
-        config = yaml.load(configdata)
+        config = yaml.unsafe_load(configdata)
     finally:
         configdata.close()
         if configdata:
@@ -55,18 +55,18 @@ def load_yaml_config(config_file):
     return config
 
 
-#=================================================================
+# =================================================================
 def to_native_str(value, encoding='iso-8859-1', func=lambda x: x):
     if isinstance(value, str):
         return value
 
-    if six.PY3 and isinstance(value, six.binary_type):  #pragma: no cover
+    if six.PY3 and isinstance(value, six.binary_type):  # pragma: no cover
         return func(value.decode(encoding))
-    elif six.PY2 and isinstance(value, six.text_type):  #pragma: no cover
+    elif six.PY2 and isinstance(value, six.text_type):  # pragma: no cover
         return func(value.encode(encoding))
 
 
-#=================================================================
+# =================================================================
 def extract_post_query(method, mime, length, stream,
                        buffered_stream=None,
                        environ=None):
@@ -140,14 +140,14 @@ def extract_post_query(method, mime, length, stream,
     return post_query
 
 
-#=================================================================
+# =================================================================
 def amf_parse(string, environ):
     try:
         from pyamf import remoting
 
         res = remoting.decode(BytesIO(string))
 
-        #print(res)
+        # print(res)
         body = res.bodies[0][1].body[0]
 
         values = {}
@@ -165,7 +165,7 @@ def amf_parse(string, environ):
             environ['pywb.inputdata'] = res
 
         query = urlencode(values)
-        #print(query)
+        # print(query)
         return query
 
     except Exception as e:
@@ -175,7 +175,7 @@ def amf_parse(string, environ):
         return None
 
 
-#=================================================================
+# =================================================================
 def append_post_query(url, post_query):
     if not post_query:
         return url
@@ -189,7 +189,7 @@ def append_post_query(url, post_query):
     return url
 
 
-#=================================================================
+# =================================================================
 def extract_client_cookie(env, cookie_name):
     cookie_header = env.get('HTTP_COOKIE')
     if not cookie_header:
@@ -214,7 +214,7 @@ def extract_client_cookie(env, cookie_name):
     return value
 
 
-#=================================================================
+# =================================================================
 def read_last_line(fh, offset=256):
     """ Read last line from a seekable file. Start reading
     from buff before end of file, and double backwards seek
@@ -235,7 +235,7 @@ def read_last_line(fh, offset=256):
     return fh.readlines()[-1]
 
 
-#=================================================================
+# =================================================================
 class BaseLoader(object):
     def __init__(self, **kwargs):
         pass
@@ -244,7 +244,7 @@ class BaseLoader(object):
         raise NotImplemented()
 
 
-#=================================================================
+# =================================================================
 class BlockLoader(BaseLoader):
     """
     a loader which can stream blocks of content
@@ -325,7 +325,7 @@ class BlockLoader(BaseLoader):
         return range_header
 
 
-#=================================================================
+# =================================================================
 class LocalFileLoader(BaseLoader):
     def load(self, url, offset=0, length=-1):
         """
@@ -365,7 +365,7 @@ class LocalFileLoader(BaseLoader):
             return afile
 
 
-#=================================================================
+# =================================================================
 class HttpLoader(BaseLoader):
     def __init__(self, **kwargs):
         self.cookie_maker = kwargs.get('cookie_maker')
@@ -396,7 +396,7 @@ class HttpLoader(BaseLoader):
         return r.raw
 
 
-#=================================================================
+# =================================================================
 class S3Loader(BaseLoader):
     def __init__(self, **kwargs):
         self.s3conn = None
@@ -404,8 +404,8 @@ class S3Loader(BaseLoader):
         self.aws_secret_access_key = kwargs.get('aws_secret_access_key')
 
     def load(self, url, offset, length):
-        if not s3_avail:  #pragma: no cover
-           raise IOError('To load from s3 paths, ' +
+        if not s3_avail:  # pragma: no cover
+            raise IOError('To load from s3 paths, ' +
                           'you must install boto: pip install boto')
 
         aws_access_key_id = self.aws_access_key_id
@@ -422,8 +422,9 @@ class S3Loader(BaseLoader):
 
         if not self.s3conn:
             try:
-                self.s3conn = connect_s3(aws_access_key_id, aws_secret_access_key)
-            except Exception:  #pragma: no cover
+                self.s3conn = connect_s3(
+                    aws_access_key_id, aws_secret_access_key)
+            except Exception:  # pragma: no cover
                 self.s3conn = connect_s3(anon=True)
 
         bucket = self.s3conn.get_bucket(bucket_name)
@@ -440,15 +441,16 @@ class S3Loader(BaseLoader):
         return key
 
 
-#=================================================================
+# =================================================================
 # Signed Cookie-Maker
-#=================================================================
+# =================================================================
 
 class HMACCookieMaker(object):
     """
     Utility class to produce signed HMAC digest cookies
     to be used with each http request
     """
+
     def __init__(self, key, name, duration=10):
         self.key = key
         self.name = name
@@ -475,9 +477,9 @@ class HMACCookieMaker(object):
         return cookie
 
 
-#=================================================================
+# =================================================================
 # Limit Reader
-#=================================================================
+# =================================================================
 class LimitReader(object):
     """
     A reader which will not read more than specified limit
@@ -537,6 +539,6 @@ class LimitReader(object):
 
         return stream
 
+
 # ============================================================================
 BlockLoader.init_default_loaders()
-
